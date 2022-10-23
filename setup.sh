@@ -6,4 +6,4 @@ source activate ${env_name}
 pip install -r requirements.txt
 pip install -e .
 python -m ipykernel install --name ${env_name}
-source deactivatex
+source deactivate
