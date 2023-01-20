@@ -1,6 +1,6 @@
 ## This is a work-in-progress repo for downloading lots of publicly available animated images
 
-### The ultimate goal is to use these images for training an image2image translation GAN
+### The ultimate goal is to use these images for fine-tuning a SD model for image2image translation
 
 - setup your conda environment with setup.sh
 - use download.ipynb to gather images from miyazaki movies
