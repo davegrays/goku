@@ -50,7 +50,8 @@ class Up(nn.Module):
     def __init__(self, in_channels, out_channels, emb_dim=128):
         super().__init__()
 
-        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+        # self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+        self.up = nn.ConvTranspose2d(in_channels, out_channels, 2, stride=2)
         self.conv = nn.Sequential(
             DoubleConv(in_channels, in_channels, residual=True),
             DoubleConv(in_channels, out_channels, in_channels // 2),
@@ -105,14 +106,14 @@ class UncondUNet(nn.Module):
         self.down2 = Down(128, 256)
         # self.sa2 = SelfAttention(256, 16)
         self.down3 = Down(256, 512)
-        # self.sa3 = SelfAttention(256, 8)
+        # self.sa3 = SelfAttention(512, 8)
 
         self.bot = DoubleConv(512, 512)
 
         self.up1 = Up(512, 256)
-        # self.sa4 = SelfAttention(128, 16)
+        # self.sa4 = SelfAttention(256, 16)
         self.up2 = Up(256, 128)
-        # self.sa5 = SelfAttention(64, 32)
+        # self.sa5 = SelfAttention(128, 32)
         self.up3 = Up(128, 64)
         # self.sa6 = SelfAttention(64, 64)
         self.outc = nn.Conv2d(64, c_out, kernel_size=1)

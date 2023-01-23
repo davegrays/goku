@@ -1,5 +1,6 @@
 import torch
 import torchvision
+import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -122,3 +123,19 @@ class DiffusionModel:
         )
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
         return dataloader
+
+    @staticmethod
+    def get_reverse_transform():
+        return torchvision.transforms.Compose(
+            [
+                torchvision.transforms.Lambda(lambda x: (x + 1) / 2),
+                torchvision.transforms.Lambda(
+                    lambda x: x.permute(1, 2, 0)
+                ),  # CHW to HWC
+                torchvision.transforms.Lambda(lambda x: x * 255.0),
+                torchvision.transforms.Lambda(
+                    lambda x: x.cpu().numpy().astype(np.uint8)
+                ),
+                torchvision.transforms.ToPILImage(),
+            ]
+        )
