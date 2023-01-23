@@ -2,11 +2,11 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
-from unet import UncondUNet
+from diffusion_from_scratch.unet import UncondUNet
 
 
 class DiffusionModel:
-    def __init__(self, t_steps=1000, epochs=10):
+    def __init__(self, t_steps=1000, epochs=10, dataset_path=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         # from original ddpm paper
         # betas and alphas deal with noise schedule
@@ -23,7 +23,7 @@ class DiffusionModel:
         self.batch_size = 16
         self.model = None
         # data
-        self.dataset_path = "/Users/davidg/Projects/goku/data/miyazaki"
+        self.dataset_path = dataset_path
         self.image_size = 64
 
     def sample_time(self):
@@ -56,7 +56,7 @@ class DiffusionModel:
         self.model.train()
         return x
 
-    def train_diffusion_model(self, images):
+    def train_diffusion_model(self):
         train_images = self.get_data()
         val_images = []
 
@@ -102,6 +102,7 @@ class DiffusionModel:
     def get_image_transforms(self):
         return torchvision.transforms.Compose(
             [
+                torchvision.transforms.Resize(self.image_size + self.image_size // 2),
                 torchvision.transforms.RandomResizedCrop(
                     self.image_size, scale=(0.8, 1.0)
                 ),
