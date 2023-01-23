@@ -76,7 +76,7 @@ class DiffusionModel:
             self.model.train()
 
             for i, (x, _) in enumerate(train_images):
-                x.to(self.device)
+                x = x.to(self.device)
                 optimizer.zero_grad()
                 # next 3 lines equate to original ddpm paper Algorithm 1 steps 3-5
                 t = self.sample_time(x.shape[0])
@@ -94,7 +94,7 @@ class DiffusionModel:
             with torch.no_grad():
                 self.model.eval()
                 for x in val_images:
-                    x.to(self.device)
+                    x = x.to(self.device)
                     t = self.sample_time(x.shape[0])
                     x_noisy, noise = self.add_noise_one_step(x, t)
                     loss = loss_function(noise, self.model(x_noisy, t))
