@@ -37,24 +37,30 @@ class DiffusionModel:
         scaled_noise = noise * torch.sqrt(1 - self.alpha_hats[t][:, None, None, None])
         return rescaled_x + scaled_noise, noise
 
-    def denoise_one_step(self, x, t):
+    def denoise_one_step(self, x, timestep):
+        t = (torch.ones(x.shape[0]) * timestep).long().to(self.device)
+
         # from original ddpm paper (Algorithm 2)
         noise_pred = self.model(x, t)
         c1 = 1 / torch.sqrt(self.alpha_hats[t][:, None, None, None])
         c2 = (1 - self.alpha_hats[t][:, None, None, None]) / torch.sqrt(
             1 - self.alpha_hats[t][:, None, None, None]
         )
-        beta = self.betas[t] if t > 1 else 0
-        return c1 * (x - c2 * noise_pred) + torch.sqrt(beta) * torch.randn_like(x).to(
-            self.device
-        )
+        beta = self.betas[t][:, None, None, None]
+
+        if timestep > 1:
+            noise_add = torch.sqrt(beta) * torch.randn_like(x).to(self.device)
+        else:
+            noise_add = torch.zeros_like(x).to(self.device)
+
+        return c1 * (x - c2 * noise_pred) + noise_add
 
     def denoise_fully(self, x, steps=1000):
         # from original ddpm paper (Algorithm 2)
         self.model.eval()
         with torch.no_grad():
             steps = max(steps, self.t_steps)
-            for i in tqdm(reversed(range(1, steps))):
+            for i in tqdm(reversed(range(1, steps, self.t_steps // steps))):
                 x = self.denoise_one_step(x, i)
         self.model.train()
         return x
