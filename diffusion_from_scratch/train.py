@@ -1,6 +1,7 @@
 import torch
 import torchvision
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from diffusion_from_scratch.unet import UncondUNet
 
@@ -27,13 +28,13 @@ class DiffusionModel:
         self.image_size = 64
 
     def sample_time(self):
-        return torch.randint(self.t_steps, size=1)
+        return torch.randint(self.t_steps, size=(1,))
 
     def add_noise_one_step(self, x, t):
         # from original ddpm paper (Algorithm 1)
-        rescaled_x = x * torch.sqrt(self.alpha_hat[t])
+        rescaled_x = x * torch.sqrt(self.alpha_hats[t])
         noise = torch.randn_like(x).to(self.device)
-        scaled_noise = noise * torch.sqrt(1 - self.alpha_hat[t])
+        scaled_noise = noise * torch.sqrt(1 - self.alpha_hats[t])
         return rescaled_x + scaled_noise, noise
 
     def denoise_one_step(self, x, t):
@@ -51,7 +52,7 @@ class DiffusionModel:
         self.model.eval()
         with torch.no_grad():
             steps = max(steps, self.t_steps)
-            for i in reversed(range(1, steps)):
+            for i in tqdm(reversed(range(1, steps))):
                 x = self.denoise_one_step(x, i)
         self.model.train()
         return x
@@ -72,7 +73,7 @@ class DiffusionModel:
             train_cumloss, val_cumloss = 0, 0
             self.model.train()
 
-            for i, x in enumerate(train_images):
+            for i, (x, _) in enumerate(train_images):
                 x.to(self.device)
                 optimizer.zero_grad()
                 # next 3 lines equate to original ddpm paper Algorithm 1 steps 3-5
@@ -92,7 +93,8 @@ class DiffusionModel:
                 self.model.eval()
                 for x in val_images:
                     x.to(self.device)
-                    x_noisy, noise = self.add_noise_one_step(x, self.sample_time())
+                    t = self.sample_time()
+                    x_noisy, noise = self.add_noise_one_step(x, t)
                     loss = loss_function(noise, self.model(x_noisy, t))
                     val_cumloss += loss.item()
             print("val loss:", train_cumloss)
