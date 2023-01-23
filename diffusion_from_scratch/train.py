@@ -28,7 +28,7 @@ class DiffusionModel:
         self.image_size = 64
 
     def sample_time(self, batch_size):
-        return torch.randint(self.t_steps, size=(batch_size,))
+        return torch.randint(self.t_steps, size=(batch_size,)).to(self.device)
 
     def add_noise_one_step(self, x, t):
         # from original ddpm paper (Algorithm 1)
