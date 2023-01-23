@@ -12,9 +12,8 @@ class DiffusionModel:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         # from original ddpm paper
         # betas and alphas deal with noise schedule
-        scale = 1000 / t_steps
-        self.beta_start = scale * 0.0001
-        self.beta_end = scale * 0.02
+        self.beta_start = 0.0001
+        self.beta_end = 0.02
         self.t_steps = t_steps
         self.betas = torch.linspace(self.beta_start, self.beta_end, self.t_steps).to(
             self.device
