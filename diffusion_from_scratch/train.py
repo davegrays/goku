@@ -27,21 +27,23 @@ class DiffusionModel:
         self.dataset_path = dataset_path
         self.image_size = 64
 
-    def sample_time(self):
-        return torch.randint(self.t_steps, size=(1,))
+    def sample_time(self, batch_size):
+        return torch.randint(self.t_steps, size=(batch_size,))
 
     def add_noise_one_step(self, x, t):
         # from original ddpm paper (Algorithm 1)
-        rescaled_x = x * torch.sqrt(self.alpha_hats[t])
+        rescaled_x = x * torch.sqrt(self.alpha_hats[t][:, None, None, None])
         noise = torch.randn_like(x).to(self.device)
-        scaled_noise = noise * torch.sqrt(1 - self.alpha_hats[t])
+        scaled_noise = noise * torch.sqrt(1 - self.alpha_hats[t][:, None, None, None])
         return rescaled_x + scaled_noise, noise
 
     def denoise_one_step(self, x, t):
         # from original ddpm paper (Algorithm 2)
         noise_pred = self.model(x, t)
-        c1 = 1 / torch.sqrt(self.alpha_hats[t])
-        c2 = (1 - self.alpha_hats[t]) / torch.sqrt(1 - self.alpha_hats[t])
+        c1 = 1 / torch.sqrt(self.alpha_hats[t][:, None, None, None])
+        c2 = (1 - self.alpha_hats[t][:, None, None, None]) / torch.sqrt(
+            1 - self.alpha_hats[t][:, None, None, None]
+        )
         beta = self.betas[t] if t > 1 else 0
         return c1 * (x - c2 * noise_pred) + torch.sqrt(beta) * torch.randn_like(x).to(
             self.device
@@ -77,7 +79,7 @@ class DiffusionModel:
                 x.to(self.device)
                 optimizer.zero_grad()
                 # next 3 lines equate to original ddpm paper Algorithm 1 steps 3-5
-                t = self.sample_time()
+                t = self.sample_time(x.shape[0])
                 x_noisy, noise = self.add_noise_one_step(x, t)
                 noise_pred = self.model(x_noisy, t)
                 loss = loss_function(noise, noise_pred)
@@ -93,7 +95,7 @@ class DiffusionModel:
                 self.model.eval()
                 for x in val_images:
                     x.to(self.device)
-                    t = self.sample_time()
+                    t = self.sample_time(x.shape[0])
                     x_noisy, noise = self.add_noise_one_step(x, t)
                     loss = loss_function(noise, self.model(x_noisy, t))
                     val_cumloss += loss.item()
