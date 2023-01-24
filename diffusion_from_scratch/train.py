@@ -8,7 +8,7 @@ from diffusion_from_scratch.unet import UncondUNet
 
 
 class DiffusionModel:
-    def __init__(self, t_steps=1000, epochs=10, dataset_path=None):
+    def __init__(self, t_steps=1000, epochs=10, dataset_path=None, model=UncondUNet()):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         # from original ddpm paper
         # betas and alphas deal with noise schedule
@@ -22,7 +22,8 @@ class DiffusionModel:
         # model
         self.epochs = epochs
         self.batch_size = 16
-        self.model = None
+        self.model = model.to(self.device)
+        self.loss_function = torch.nn.MSELoss()
         # data
         self.dataset_path = dataset_path
         self.image_size = 64
@@ -39,19 +40,15 @@ class DiffusionModel:
 
     def denoise_one_step(self, x, timestep):
         t = (torch.ones(x.shape[0]) * timestep).long().to(self.device)
+        beta = self.betas[t][:, None, None, None]
+        alpha_hat = self.alpha_hats[t][:, None, None, None]
 
         # from original ddpm paper (Algorithm 2)
         noise_pred = self.model(x, t)
-        c1 = 1 / torch.sqrt(self.alpha_hats[t][:, None, None, None])
-        c2 = (1 - self.alpha_hats[t][:, None, None, None]) / torch.sqrt(
-            1 - self.alpha_hats[t][:, None, None, None]
-        )
-        beta = self.betas[t][:, None, None, None]
-
-        if timestep > 1:
-            noise_add = torch.sqrt(beta) * torch.randn_like(x).to(self.device)
-        else:
-            noise_add = torch.zeros_like(x).to(self.device)
+        c1 = 1 / torch.sqrt(1 - beta)
+        c2 = beta / torch.sqrt(1 - alpha_hat)
+        noise_scale = torch.sqrt(beta) if timestep > 1 else 0
+        noise_add = torch.randn_like(x).to(self.device) * noise_scale
 
         return c1 * (x - c2 * noise_pred) + noise_add
 
@@ -59,8 +56,8 @@ class DiffusionModel:
         # from original ddpm paper (Algorithm 2)
         self.model.eval()
         with torch.no_grad():
-            steps = max(steps, self.t_steps)
-            for i in tqdm(reversed(range(1, steps, self.t_steps // steps))):
+            steps = min(steps, self.t_steps)
+            for i in tqdm(reversed(range(1, self.t_steps, self.t_steps // steps))):
                 x = self.denoise_one_step(x, i)
         self.model.train()
         return x
@@ -70,8 +67,6 @@ class DiffusionModel:
         val_images = []
 
         # instantiate model, loss_function, and optimizer
-        loss_function = torch.nn.MSELoss()
-        self.model = UncondUNet().to(self.device)
         optimizer = torch.optim.Adam(self.model.parameters())
 
         # basic training loop:
@@ -88,7 +83,7 @@ class DiffusionModel:
                 t = self.sample_time(x.shape[0])
                 x_noisy, noise = self.add_noise_one_step(x, t)
                 noise_pred = self.model(x_noisy, t)
-                loss = loss_function(noise, noise_pred)
+                loss = self.loss_function(noise, noise_pred)
                 loss.backward()
                 optimizer.step()
 
@@ -103,7 +98,7 @@ class DiffusionModel:
                     x = x.to(self.device)
                     t = self.sample_time(x.shape[0])
                     x_noisy, noise = self.add_noise_one_step(x, t)
-                    loss = loss_function(noise, self.model(x_noisy, t))
+                    loss = self.loss_function(noise, self.model(x_noisy, t))
                     val_cumloss += loss.item()
             print("val loss:", train_cumloss)
 
