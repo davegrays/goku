@@ -1,7 +1,5 @@
-## This is a work-in-progress repo for downloading lots of publicly available animated images
+## Implement diffusion denoising models from scratch
 
-### The ultimate goal is to use these images for fine-tuning a SD model for image2image translation
-
-- setup your conda environment with setup.sh
-- use download.ipynb to gather images from miyazaki movies
-- underlying code samples can be found in goku/etl
+- run setup.sh to setup your environment
+- run code in download.ipynb to gather images from miyazaki movies
+- use training.ipynb to train a model and generate sample imagery
