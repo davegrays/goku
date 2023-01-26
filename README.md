@@ -3,5 +3,5 @@
 ### The ultimate goal is to use these images for fine-tuning a SD model for image2image translation
 
 - setup your conda environment with setup.sh
-- use download.ipynb to gather images from miyazaki movies
+- use download.ipynb to gather ~1000 images from miyazaki movies
 - underlying code samples can be found in goku/etl
