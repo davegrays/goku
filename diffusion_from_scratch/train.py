@@ -107,7 +107,7 @@ class DiffusionModel:
     def get_image_transforms(self):
         return torchvision.transforms.Compose(
             [
-                torchvision.transforms.Resize(self.image_size + self.image_size // 2),
+                torchvision.transforms.Resize(self.image_size + self.image_size // 4),
                 torchvision.transforms.RandomResizedCrop(
                     self.image_size, scale=(0.8, 1.0)
                 ),

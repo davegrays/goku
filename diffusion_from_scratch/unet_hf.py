@@ -208,7 +208,7 @@ class PreNorm(nn.Module):
 class UncondUNet(nn.Module):
     def __init__(
         self,
-        dim,
+        dim=64,
         init_dim=None,
         out_dim=None,
         dim_mults=(1, 2, 4, 8),
