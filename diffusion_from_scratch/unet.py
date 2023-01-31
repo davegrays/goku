@@ -3,6 +3,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # adapted from https://github.com/dome272/Diffusion-Models-pytorch/blob/main/modules.py
+# minor updates to upsampling regime
+# added function for transfering pre-trained weights
+
+
+def _copyParams(module_src, module_dest):
+    params_src = module_src.named_parameters()
+    params_dest = module_dest.named_parameters()
+
+    dict_dest = dict(params_dest)
+
+    for name, param in params_src:
+        if name in dict_dest:
+            dict_dest[name].data.copy_(param.data)
 
 
 class DoubleConv(nn.Module):
