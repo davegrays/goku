@@ -38,7 +38,7 @@ class DiffusionModel:
         scaled_noise = noise * torch.sqrt(1 - self.alpha_hats[t][:, None, None, None])
         return rescaled_x + scaled_noise, noise
 
-    def denoise_one_step(self, x, timestep):
+    def denoise_from_step(self, x, timestep):
         t = (torch.ones(x.shape[0]) * timestep).long().to(self.device)
         beta = self.betas[t][:, None, None, None]
         alpha_hat = self.alpha_hats[t][:, None, None, None]
@@ -113,7 +113,7 @@ class DiffusionModel:
                 ),
                 torchvision.transforms.RandomHorizontalFlip(),
                 torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                torchvision.transforms.Lambda(lambda x: x * 2 - 1),
             ]
         )
 

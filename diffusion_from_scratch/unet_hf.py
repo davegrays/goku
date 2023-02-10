@@ -9,6 +9,8 @@ import torch
 from torch import nn, einsum
 import torch.nn.functional as F
 
+# from https://huggingface.co/blog/annotated-diffusion
+
 
 def exists(x):
     return x is not None
@@ -173,8 +175,7 @@ class LinearAttention(nn.Module):
         hidden_dim = dim_head * heads
         self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, bias=False)
 
-        self.to_out = nn.Sequential(nn.Conv2d(hidden_dim, dim, 1),
-                                    nn.GroupNorm(1, dim))
+        self.to_out = nn.Sequential(nn.Conv2d(hidden_dim, dim, 1), nn.GroupNorm(1, dim))
 
     def forward(self, x):
         b, c, h, w = x.shape
@@ -224,7 +225,9 @@ class UncondUNet(nn.Module):
         input_channels = channels * (2 if self_condition else 1)
 
         init_dim = default(init_dim, dim)
-        self.init_conv = nn.Conv2d(input_channels, init_dim, 1, padding=0) # changed to 1 and 0 from 7,3
+        self.init_conv = nn.Conv2d(
+            input_channels, init_dim, 1, padding=0
+        )  # changed to 1 and 0 from 7,3
 
         dims = [init_dim, *map(lambda m: dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))
